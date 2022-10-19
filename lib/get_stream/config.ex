@@ -3,14 +3,14 @@ defmodule GetStream.Config do
     Configuration for GetStream 
   """
 
-  defstruct [:region, :key, :secret]
+  defstruct [:region, :key, :secret, :created_by_id]
 
   @type t() :: %__MODULE__{
-    region: String.t(),
-    key: String.t(),
-    secret: String.t()
-  }
-
+          region: String.t(),
+          key: String.t(),
+          secret: String.t(),
+          created_by_id: String.t()
+        }
 
   @doc """
     returns configuration for GetStream
@@ -18,7 +18,7 @@ defmodule GetStream.Config do
     ## Examples
       
       iex> get_config()
-      %Config{region: "some_region", key: "some_key", secret: "some_secret"}
+      %Config{region: "some_region", key: "some_key", secret: "some_secret", created_by_id: "some-created-by-id"}
 
   """
 
@@ -27,16 +27,17 @@ defmodule GetStream.Config do
     region = Application.get_env(:getstream, :region) |> resolve_value()
     key = Application.get_env(:getstream, :key) |> resolve_value()
     secret = Application.get_env(:getstream, :secret) |> resolve_value()
+    created_by_id = Application.get_env(:getstream, :created_by_id) |> resolve_value()
 
     %__MODULE__{
       region: region,
       key: key,
-      secret: secret
-
+      secret: secret,
+      created_by_id: created_by_id
     }
   end
 
-  defp resolve_value ({:system, env})  do
+  defp resolve_value({:system, env}) do
     System.get_env(env)
   end
 
