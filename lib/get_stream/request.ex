@@ -4,10 +4,9 @@ defmodule GetStream.Request do
   """
 
   @default_headers [
-    {"content-type", "application/json"}
+    {"content-type", "application/json"},
+    {"Stream-Auth-Type", "jwt"}
   ]
-
-  @version "v1.0"
 
   defstruct [:url, :path, :method, :headers, :params, :body, :options, :token]
 
@@ -20,13 +19,13 @@ defmodule GetStream.Request do
           method: HTTPoison.method(),
           headers: HTTPoison.headers(),
           params: map(),
-          body: String.t(),
+          body: map(),
           options: list(),
           token: String.t()
         }
 
   def new do
-    struct(%__MODULE__{})
+    struct(%__MODULE__{headers: @default_headers})
   end
 
   def with_method(%__MODULE__{} = r, method) do
@@ -42,7 +41,9 @@ defmodule GetStream.Request do
   end
 
   def with_token(%__MODULE__{} = r) do
-    %{r | token: Signer.server_token()}
+    token = Signer.server_token()
+    headers = [{"Authorization", token} | r.headers]
+    %{r | token: token, headers: headers}
   end
 
   def with_params(%__MODULE__{} = r, params) do
@@ -52,27 +53,36 @@ defmodule GetStream.Request do
   def send(%__MODULE__{} = r) do
     url = construct_url(r)
     body = if is_map(r.body), do: Jason.encode!(r.body), else: Jason.encode!(%{})
+
     HTTPoison.request(r.method, url, body, r.headers)
     |> handle_response()
   end
 
-  defp handle_response({:ok, %HTTPoison.Response{body: body}}) do
+  defp handle_response({:ok, %HTTPoison.Response{body: body, status_code: code}})
+       when code in [200, 201] do
     {:ok, json_or_value(body)}
+  end
+
+  defp handle_response({:ok, %HTTPoison.Response{body: body}}) do
+    {:error, json_or_value(body)}
   end
 
   defp handle_response({:error, %HTTPoison.Error{reason: reason}}) do
     {:error, json_or_value(reason)}
   end
 
-  defp json_or_value(data) do
+  defp json_or_value(data) when is_binary(data) do
     case Jason.decode(data) do
       {:ok, parsed_value} -> parsed_value
       _ -> data
     end
   end
 
+  defp json_or_value(data), do: data
+
   defp construct_url(%__MODULE__{} = r) do
     cfg = Config.get_config()
-    "https://#{cfg.region}-api.stream-io-api.com/api/#{@version}/#{r.path}"
+    # "https://#{cfg.region}-api.stream-io-api.com/api/#{@version}/#{r.path}"
+    "https://chat.stream-io-api.com/#{r.path}?api_key=#{cfg.key}"
   end
 end
