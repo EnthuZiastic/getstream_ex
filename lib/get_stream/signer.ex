@@ -20,11 +20,8 @@ defmodule GetStream.Signer do
     token
   end
 
-  @spec user_token(binary(), non_neg_integer(), non_neg_integer()) :: binary()
-  def user_token(user_id, exp, iat)
-      when is_binary(user_id) and is_number(exp) and is_number(iat) and exp > 0 and iat > 0 do
-    payload = %{"user_id" => user_id, "exp" => exp, "iat" => iat}
-
+  @spec user_token(map) :: {:ok, binary()} | {:error, atom | keyword()}
+  def user_token(payload) do
     secret_key =
       case Config.get_config() do
         %{secret: secret} when is_binary(secret) -> secret
@@ -32,6 +29,9 @@ defmodule GetStream.Signer do
       end
 
     signer = Joken.Signer.create("HS256", secret_key)
-    Token.generate_and_sign!(payload, signer)
+
+    with {:ok, token, _claims} <- Token.generate_and_sign(payload, signer) do
+      {:ok, token}
+    end
   end
 end
