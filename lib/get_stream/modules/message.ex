@@ -32,6 +32,20 @@ defmodule GetStream.Modules.Message do
     |> parse_resp()
   end
 
+  @spec update_attachment(String.t(), map(), String.t()) :: any
+  def update_attachment(message_id, new_attachment, user_id) do
+    Request.new()
+    |> Request.with_path("messages/#{message_id}")
+    |> Request.with_token()
+    |> Request.with_method(:put)
+    |> Request.with_body(%{
+      "set" => %{"attachments" => [new_attachment]},
+      "user" => %{"id" => user_id}
+    })
+    |> Request.send()
+    |> parse_resp()
+  end
+
   defp parse_resp({:ok, %{"message" => message}}) do
     {:ok, message}
   end
