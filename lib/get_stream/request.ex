@@ -8,7 +8,16 @@ defmodule GetStream.Request do
     {"Stream-Auth-Type", "jwt"}
   ]
 
-  defstruct [:url, :path, :method, :headers, :params, :body, :options, :token]
+  defstruct [
+    :url,
+    :path,
+    :method,
+    :headers,
+    :body,
+    :options,
+    :token,
+    params: %{}
+  ]
 
   alias GetStream.Signer
   alias GetStream.Config
@@ -42,7 +51,9 @@ defmodule GetStream.Request do
 
   def with_token(%__MODULE__{} = r) do
     token = Signer.server_token()
-    headers = [{"Authorization", token} | r.headers]
+    api_key = Config.get_config().key
+
+    headers = [{"Authorization", token}, {"api_key", api_key} | r.headers]
     %{r | token: token, headers: headers}
   end
 
@@ -87,8 +98,7 @@ defmodule GetStream.Request do
   defp json_or_value(data), do: data
 
   defp construct_url(%__MODULE__{} = r) do
-    cfg = Config.get_config()
-    # "https://#{cfg.region}-api.stream-io-api.com/api/#{@version}/#{r.path}"
-    "https://chat.stream-io-api.com/#{r.path}?api_key=#{cfg.key}"
+    encoded_params = URI.encode_query(r.params)
+    "https://chat.stream-io-api.com/#{r.path}?#{encoded_params}"
   end
 end

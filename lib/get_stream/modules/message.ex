@@ -46,12 +46,37 @@ defmodule GetStream.Modules.Message do
     |> parse_resp()
   end
 
+  @spec search_message(String.t(), String.t(), String.t()) :: {:error, any} | {:ok, any}
+  def search_message(channel_type, channel_id, message_id) do
+    payload = %{
+      "payload" =>
+        Jason.encode!(%{
+          "filter_conditions" => %{
+            "cid" => %{"$eq" => "#{channel_type}:#{channel_id}"}
+          },
+          "message_filter_conditions" => %{"id" => %{"$eq" => message_id}}
+        })
+    }
+
+    Request.new()
+    |> Request.with_path("search")
+    |> Request.with_params(payload)
+    |> Request.with_token()
+    |> Request.with_method(:get)
+    |> Request.send()
+    |> parse_resp()
+  end
+
   defp parse_resp({:ok, %{"message" => message}}) do
     {:ok, message}
   end
 
   defp parse_resp({:ok, %{"file" => file}}) do
     {:ok, file}
+  end
+
+  defp parse_resp({:ok, %{"results" => messages}}) when is_list(messages) do
+    {:ok, messages}
   end
 
   defp parse_resp(resp), do: resp
