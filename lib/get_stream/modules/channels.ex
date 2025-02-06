@@ -22,6 +22,16 @@ defmodule GetStream.Modules.Channel do
     :type
   ]
 
+  def query_channel(body) do
+    Request.new()
+    |> Request.with_path("channels")
+    |> Request.with_token()
+    |> Request.with_method(:post)
+    |> Request.with_body(body)
+    |> Request.send()
+    |> parse_resp()
+  end
+
   def create_channel_with_type(channel_type, channel_id, params) do
     params = Utils.put_created_by_in_data(params)
 
