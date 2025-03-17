@@ -54,6 +54,16 @@ defmodule GetStream.Modules.Channel do
     |> parse_resp()
   end
 
+  def partial_update_channel(channel_type, channel_id, options) do
+    Request.new()
+    |> Request.with_path("channels/#{channel_type}/#{channel_id}")
+    |> Request.with_token()
+    |> Request.with_method(:patch)
+    |> Request.with_body(options)
+    |> Request.send()
+    |> parse_resp()
+  end
+
   def delete_channel(channel_type, channel_id) do
     Request.new()
     |> Request.with_path("channels/#{channel_type}/#{channel_id}")
@@ -77,6 +87,10 @@ defmodule GetStream.Modules.Channel do
 
   def remove_moderators(channel_type, channel_id, mod_ids) do
     update_channel(channel_type, channel_id, %{"demote_moderators" => mod_ids})
+  end
+
+  def freeze_channel(channel_type, channel_id) do
+    partial_update_channel(channel_type, channel_id, %{"set" => %{"frozen" => true}})
   end
 
   defp parse_resp({:ok, %{"channel" => channel_info} = resp}) do
